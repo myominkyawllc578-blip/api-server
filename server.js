@@ -25,6 +25,6 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/earning_sources", async (r
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port " + PORT);
 });
