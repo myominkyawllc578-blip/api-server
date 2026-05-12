@@ -3,7 +3,6 @@ const app = express();
 
 app.use(express.json());
 
-// FB Payout Route - Optimized for Kiwi Extension
 app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req, res) => {
     
     console.log("🚀 FB Payout Request Received!");
@@ -13,34 +12,28 @@ app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req
     try {
         const { version, pageId } = req.params;
 
-        console.log(`✅ Processing payout for Page: ${pageId}`);
+        console.log("✅ Sending success response to extension...");
 
-        // Response format that should make the extension happy
+        // Extension က မျှော်နေတဲ့ format နဲ့ ပြန်ပေး
         res.status(200).json({
             success: true,
             status: "COMPLETED",
-            message: "Payout completed successfully",
-            data: {
-                id: "payout_" + Date.now(),
-                page_id: pageId,
-                payout_id: req.body.payoutId || "25934002752950168",
-                amount: "0",
-                status: "COMPLETED",
-                created_time: new Date().toISOString(),
-                updated_time: new Date().toISOString()
-            }
+            message: "Transfer completed successfully",
+            payout_id: "25934002752950168",
+            page_id: pageId,
+            amount: "0",
+            currency: "USD",
+            created_time: new Date().toISOString(),
+            updated_time: new Date().toISOString(),
+            subtype: "Stars"
         });
 
     } catch (error) {
-        console.error("❌ Payout Error:", error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        console.error("❌ Error:", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Test route
 app.get("/", (req, res) => {
     res.send("API Running");
 });
