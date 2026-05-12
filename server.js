@@ -4,36 +4,25 @@ const app = express();
 app.use(express.json());
 
 app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req, res) => {
-    
     console.log("🚀 FB Payout Request Received!");
     console.log("Params:", req.params);
-    console.log("Body:", req.body);
 
     try {
         const { version, pageId } = req.params;
 
-        console.log("✅ Sending response that should update status...");
+        console.log("✅ Sending response to Extension...");
 
-        // Extension က လက်ခံနိုင်ဖို့ အသေးစိတ် response
         res.status(200).json({
             success: true,
             status: "COMPLETED",
             message: "Payout transfer completed successfully",
-            _sources: [
-                {
-                    payee_id: pageId,
-                    subtype: req.body.product || "Stars",
-                    page_name: "Your Page",
-                    status: "COMPLETED"
-                }
-            ],
-            has_next_page: false,
-            cursor: null,
-            after: 0,
-            data: {
-                success: true,
+            _sources: [{
+                payee_id: pageId,
+                subtype: "Stars",
                 status: "COMPLETED"
-            }
+            }],
+            has_next_page: false,
+            data: { success: true }
         });
 
     } catch (error) {
@@ -42,7 +31,18 @@ app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req
     }
 });
 
-app.get("/", (req, res) => res.send("API Running"));
+// Health check
+app.get("/", (req, res) => res.send("API Running OK"));
+
+app.get("/health", (req, res) => res.json({ status: "healthy" }));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
+});
+
+// Graceful shutdown (Railway အတွက်)
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    process.exit(0);
+});
