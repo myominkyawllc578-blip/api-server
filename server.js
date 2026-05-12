@@ -1,9 +1,15 @@
-// FB Payout Route
+const express = require("express");
+const app = express();
+
+app.use(express.json());
+
+// FB Payout Route (မှန်ကန်တဲ့ ဗားရှင်း)
 app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req, res) => {
     
     console.log("🚀 FB Payout Request Received!");
     console.log("Params:", req.params);
     console.log("Body:", req.body);
+    console.log("Query:", req.query);
 
     try {
         const { version, pageId } = req.params;
@@ -25,4 +31,14 @@ app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req
             error: error.message
         });
     }
+});
+
+// Root route (စမ်းသပ်ဖို့)
+app.get("/", (req, res) => {
+    res.send("API Running");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
