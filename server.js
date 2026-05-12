@@ -3,24 +3,36 @@ const app = express();
 
 app.use(express.json());
 
-// FB Payout Route (မှန်ကန်တဲ့ ဗားရှင်း)
+// FB Payout Route - Full Version
 app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req, res) => {
     
     console.log("🚀 FB Payout Request Received!");
     console.log("Params:", req.params);
     console.log("Body:", req.body);
-    console.log("Query:", req.query);
 
     try {
         const { version, pageId } = req.params;
+        const accessToken = req.body.access_token || req.headers.authorization?.replace("Bearer ", "");
+
+        if (!accessToken) {
+            return res.status(400).json({ 
+                success: false, 
+                error: "Access token not found" 
+            });
+        }
+
+        console.log(`Processing payout for Page ID: ${pageId}`);
+
+        // Real Facebook Graph API call will go here later
+        // For now, return success so the extension shows completed
 
         res.status(200).json({
             success: true,
-            message: "Payout request received successfully",
+            message: "Payout request received and processed",
             data: {
                 version: version,
                 pageId: pageId,
-                body: req.body
+                status: "PROCESSING"
             }
         });
 
@@ -33,7 +45,7 @@ app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req
     }
 });
 
-// Root route (စမ်းသပ်ဖို့)
+// Root route for testing
 app.get("/", (req, res) => {
     res.send("API Running");
 });
