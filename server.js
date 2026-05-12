@@ -12,25 +12,31 @@ app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req
     try {
         const { version, pageId } = req.params;
 
-        console.log("✅ Sending success response to extension...");
+        console.log("✅ Sending COMPLETED response to extension...");
 
-        // Extension က မျှော်နေတဲ့ format နဲ့ ပြန်ပေး
+        // Extension က လိုအပ်နိုင်တဲ့ ပြည့်စုံတဲ့ response
         res.status(200).json({
             success: true,
             status: "COMPLETED",
-            message: "Transfer completed successfully",
-            payout_id: "25934002752950168",
+            message: "Payout transfer completed successfully",
+            id: "payout_" + Date.now(),
+            payout_id: req.body.payoutId || "25934002752950168",
             page_id: pageId,
             amount: "0",
             currency: "USD",
+            subtype: "Stars",
             created_time: new Date().toISOString(),
             updated_time: new Date().toISOString(),
-            subtype: "Stars"
+            error: null
         });
 
     } catch (error) {
         console.error("❌ Error:", error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ 
+            success: false, 
+            status: "FAILED",
+            error: error.message 
+        });
     }
 });
 
