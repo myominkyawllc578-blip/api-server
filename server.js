@@ -8,19 +8,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
-
-if (!ACCESS_TOKEN) {
-  console.error("❌ FACEBOOK_ACCESS_TOKEN is missing!");
-  process.exit(1);
-}
-
 app.get('/', (req, res) => {
   res.json({ status: "✅ Server is running" });
 });
 
-app.post('/payout-source-transfer', async (req, res) => {
-  res.json({ success: true, message: "Received payout request" });
+app.post('/payout-source-transfer', (req, res) => {
+  res.json({ success: true, message: "Request received" });
 });
 
 app.listen(PORT, () => {
