@@ -3,7 +3,7 @@ const app = express();
 
 app.use(express.json());
 
-// FB Payout Route - Improved for Extension
+// FB Payout Route - Optimized for Kiwi Extension
 app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req, res) => {
     
     console.log("🚀 FB Payout Request Received!");
@@ -13,19 +13,21 @@ app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req
     try {
         const { version, pageId } = req.params;
 
-        console.log(`Processing payout for Page: ${pageId}`);
+        console.log(`✅ Processing payout for Page: ${pageId}`);
 
-        // Response that Extension likely expects
+        // Response format that should make the extension happy
         res.status(200).json({
             success: true,
-            message: "Payout request processed successfully",
             status: "COMPLETED",
+            message: "Payout completed successfully",
             data: {
-                payout_id: req.body.payoutId || "25934002752950168",
+                id: "payout_" + Date.now(),
                 page_id: pageId,
+                payout_id: req.body.payoutId || "25934002752950168",
                 amount: "0",
                 status: "COMPLETED",
-                created_time: new Date().toISOString()
+                created_time: new Date().toISOString(),
+                updated_time: new Date().toISOString()
             }
         });
 
