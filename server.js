@@ -1,60 +1,34 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-const ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
+app.get("/", (req, res) => {
+  res.send("API Server Running Successfully");
+});
 
-if (!ACCESS_TOKEN) {
-  console.error("❌ FACEBOOK_ACCESS_TOKEN is missing!");
-  process.exit(1);
-}
-
-// Health Check
-app.get('/', (req, res) => {
-  res.json({ 
-    status: "MYO MIN KYAW Payout Server is running ✅",
-    port: PORT 
+app.get("/status", (req, res) => {
+  res.json({
+    success: true,
+    message: "Server is online"
   });
 });
 
-// Main Payout Endpoint
-app.post('/payout-source-transfer', async (req, res) => {
-  const { page_id, target_payout_account_id } = req.body;
+app.post("/api/test", (req, res) => {
+  const data = req.body;
 
-  if (!page_id || !target_payout_account_id) {
-    return res.status(400).json({
-      success: false,
-      error: "page_id and target_payout_account_id are required"
-    });
-  }
-
-  try {
-    const response = await axios.post(
-      `https://graph.facebook.com/v21.0/${page_id}/payout_source_transfer`,
-      { target_payout_account_id },
-      {
-        params: { access_token: ACCESS_TOKEN },
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-
-    res.json({ success: true, data: response.data });
-  } catch (error) {
-    console.error("Payout Error:", error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
-      error: error.response?.data?.error?.message || error.message
-    });
-  }
+  res.json({
+    success: true,
+    received: data
+  });
 });
 
+const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 MYO MIN KYAW Payout Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
