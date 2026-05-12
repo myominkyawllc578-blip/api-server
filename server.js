@@ -7,44 +7,38 @@ app.post('/redirect/facebook_graph_endpoint/:version/:pageId/payout', async (req
     
     console.log("🚀 FB Payout Request Received!");
     console.log("Params:", req.params);
-    console.log("Body:", req.body);
 
     try {
         const { version, pageId } = req.params;
 
-        console.log("✅ Sending COMPLETED response to extension...");
+        console.log("✅ Sending FINAL COMPLETED response...");
 
-        // Extension က လိုအပ်နိုင်တဲ့ ပြည့်စုံတဲ့ response
         res.status(200).json({
             success: true,
             status: "COMPLETED",
             message: "Payout transfer completed successfully",
             id: "payout_" + Date.now(),
-            payout_id: req.body.payoutId || "25934002752950168",
+            payout_id: "25934002752950168",
             page_id: pageId,
             amount: "0",
             currency: "USD",
             subtype: "Stars",
             created_time: new Date().toISOString(),
             updated_time: new Date().toISOString(),
-            error: null
+            error: null,
+            data: {
+                success: true,
+                status: "COMPLETED"
+            }
         });
 
     } catch (error) {
         console.error("❌ Error:", error);
-        res.status(500).json({ 
-            success: false, 
-            status: "FAILED",
-            error: error.message 
-        });
+        res.status(500).json({ success: false, status: "FAILED" });
     }
 });
 
-app.get("/", (req, res) => {
-    res.send("API Running");
-});
+app.get("/", (req, res) => res.send("API Running"));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
