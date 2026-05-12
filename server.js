@@ -47,4 +47,14 @@ app.post('/payout-source-transfer', async (req, res) => {
 
     res.json({ success: true, data: response.data });
   } catch (error) {
-    console.error("Payout Error:",
+    console.error("Payout Error:", error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data?.error?.message || error.message
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 MYO MIN KYAW Payout Server running on port ${PORT}`);
+});
