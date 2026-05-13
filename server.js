@@ -4,7 +4,7 @@ const axios = require('axios');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors());
 app.use(express.json());
@@ -12,7 +12,7 @@ app.use(express.json());
 const ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
 
 if (!ACCESS_TOKEN) {
-  console.error("❌ FACEBOOK_ACCESS_TOKEN is missing in .env file");
+  console.error("❌ FACEBOOK_ACCESS_TOKEN is missing in .env");
 }
 
 // Health Check
@@ -20,20 +20,18 @@ app.get('/', (req, res) => {
   res.json({ status: "✅ Server is running" });
 });
 
-// Main Payout Endpoint
+// Main Endpoint
 app.post('/payout-source-transfer', async (req, res) => {
-  const { page_id, target_payout_account_id, ...rest } = req.body;
-
-  if (!page_id) {
-    return res.status(400).json({ success: false, error: "page_id is required" });
-  }
-
   try {
+    const { page_id, target_payout_account_id } = req.body;
+
+    if (!page_id) {
+      return res.status(400).json({ success: false, error: "page_id is required" });
+    }
+
     const response = await axios.post(
       `https://graph.facebook.com/v21.0/${page_id}/payout_source_transfer`,
-      {
-        target_payout_account_id: target_payout_account_id || req.body.target_payout_account_id
-      },
+      { target_payout_account_id },
       {
         params: { access_token: ACCESS_TOKEN },
         headers: { 'Content-Type': 'application/json' }
