@@ -34,9 +34,10 @@ app.post(
         "https://www.facebook.com/api/graphql/",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      headers: {
+  "Content-Type": "application/json",
+  "x-fb-friendly-name": "FBScreenTimeLogger_syncMutation",
+},
           body: JSON.stringify(req.body),
         }
       );
