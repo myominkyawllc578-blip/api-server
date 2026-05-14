@@ -27,6 +27,8 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
         "Authorization": `Bearer ${accessToken}`,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": "https://www.facebook.com/",
+        "Origin": "https://www.facebook.com",
+        "x-fb-friendly-name": "UseMutatePayoutCometLinkPayeeSubtypeQuery",
       },
       body: JSON.stringify(req.body),
     });
