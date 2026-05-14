@@ -42,7 +42,19 @@ app.post(
         }
       );
 
-      const data = await fbResponse.json();
+      const text = await fbResponse.text();
+
+console.log("FACEBOOK RAW RESPONSE:", text);
+
+let data;
+
+try {
+  data = JSON.parse(text);
+} catch {
+  data = {
+    raw: text,
+  };
+    }
 
       console.log("FACEBOOK RESPONSE:", data);
 
@@ -91,7 +103,19 @@ app.post(
   }
 );
 
-      const data = await fbResponse.json();
+      const text = await fbResponse.text();
+
+console.log("FACEBOOK RAW RESPONSE:", text);
+
+let data;
+
+try {
+  data = JSON.parse(text);
+} catch {
+  data = {
+    raw: text,
+  };
+}
 
       console.log("FACEBOOK SOURCES RESPONSE:", data);
 
