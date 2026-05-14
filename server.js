@@ -36,8 +36,7 @@ app.post(
           method: "POST",
       headers: {
   "Content-Type": "application/json",
-  "x-fb-friendly-name": "FBScreenTimeLogger_syncMutation",
-},
+  
           body: JSON.stringify(req.body),
         }
       );
@@ -97,8 +96,7 @@ app.post(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-fb-friendly-name": "FBScreenTimeLogger_syncMutation",
-    },
+      
     body: JSON.stringify(req.body),
   }
 );
