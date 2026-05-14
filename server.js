@@ -29,13 +29,16 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
         "accept-language": "en-US,en;q=0.9",
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-origin",
+        "sec-ch-ua": '"Not)A;Brand";v="99", "Chromium";v="134", "Google Chrome";v="134"',
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": '"Windows"',
       },
       body: JSON.stringify(req.body),
     });
 
     const text = await fbResponse.text();
     console.log("STATUS:", fbResponse.status);
-    console.log("RAW RESPONSE:", text.substring(0, 700));
+    console.log("RAW RESPONSE:", text.substring(0, 800));
 
     let data;
     try {
