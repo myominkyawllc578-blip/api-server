@@ -13,41 +13,24 @@ app.get("/", (req, res) => {
   });
 });
 
-/*
-|--------------------------------------------------------------------------
-| PAYOUT ROUTE
-|--------------------------------------------------------------------------
-*/
-
 app.post(
   "/redirect/facebook_graph_endpoint/v24.1/:id/payout",
   async (req, res) => {
     try {
-      const pageId = req.params.id;
-      const accessToken = req.query.access_token;
-
-      console.log("FACEBOOK PAYOUT REQUEST");
+      console.log("PAYOUT REQUEST");
       console.log("PARAMS:", req.params);
       console.log("BODY:", req.body);
 
-      const fbResponse = await fetch(
-        `https://graph.facebook.com/v24.1/${pageId}/payout?access_token=${accessToken}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(req.body),
-        }
-      );
-
-      const data = await fbResponse.json();
-
-      console.log("FACEBOOK RESPONSE:", data);
-
-      return res.status(200).json(data);
+      return res.json({
+        success: true,
+        message: "Payout endpoint working",
+        payoutId: req.body.fp || null,
+        pageId: req.body.pe || null,
+        subtype: req.body.product || null,
+        timestamp: new Date().toISOString(),
+      });
     } catch (e) {
-      console.error("FACEBOOK PAYOUT ERROR:", e);
+      console.error("PAYOUT ERROR:", e);
 
       return res.status(500).json({
         success: false,
@@ -56,36 +39,24 @@ app.post(
     }
   }
 );
+
 app.post(
   "/redirect/facebook_graph_endpoint/v24.1/:id/earning_sources",
   async (req, res) => {
     try {
-      const payoutId = req.params.id;
-      const accessToken = req.query.access_token;
-
-      console.log("FACEBOOK SOURCES REQUEST");
+      console.log("EARNING SOURCES REQUEST");
       console.log("PARAMS:", req.params);
       console.log("BODY:", req.body);
 
-      const fbResponse = await fetch(
-        `https://graph.facebook.com/v24.1/${payoutId}/earning_sources?access_token=${accessToken}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(req.body),
-        }
-      );
-
-      const data = await fbResponse.json();
-
-      console.log("FACEBOOK SOURCES RESPONSE:", data);
-
-      return res.status(200).json(data);
-
+      return res.json({
+        success: true,
+        _sources: [],
+        has_next_page: false,
+        cursor: null,
+        after: 0,
+      });
     } catch (e) {
-      console.error("FACEBOOK SOURCES ERROR:", e);
+      console.error("EARNING SOURCES ERROR:", e);
 
       return res.status(500).json({
         success: false,
@@ -94,6 +65,7 @@ app.post(
     }
   }
 );
+
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -102,7 +74,7 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
