@@ -11,7 +11,7 @@ app.get("/", (req, res) => {
   res.json({ status: "✅ Server is running" });
 });
 
-// PAYOUT ROUTE
+// ==================== PAYOUT ROUTE ====================
 app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) => {
   try {
     const accessToken = req.query.access_token;
@@ -27,6 +27,8 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
         "Referer": "https://www.facebook.com/",
         "Origin": "https://www.facebook.com",
         "x-fb-friendly-name": req.headers["x-fb-friendly-name"] || "RelayModern",
+        "x-fb-lsd": req.headers["x-fb-lsd"] || "",
+        "accept": "application/json",
       },
       body: JSON.stringify(req.body),
     });
@@ -38,13 +40,13 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
     let data;
     try {
       data = JSON.parse(text);
-    } catch {
+    } catch (e) {
       data = { raw: text };
     }
 
     return res.status(200).json({ success: true, data });
   } catch (e) {
-    console.error("ERROR:", e);
+    console.error("ERROR:", e.message);
     return res.status(500).json({ success: false, error: e.message });
   }
 });
