@@ -1,57 +1,91 @@
-const express = require("express");
-const cors = require("cors");
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
+const bodyParser = require('body-parser');
 
 const app = express();
+const PORT = process.env.PORT || 8080;
 
+// Middleware
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => {
-  res.json({ status: "✅ Server is running" });
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`\n[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  next();
 });
 
-// ==================== DECODED PROXY ====================
-const PROXY = "http://user-spn5hz794h-country-us:C23iKelo2T1nE\~neqm@isp.decodo.com:10001";
+// Main Payout Endpoint
+app.post('/payout', async (req, res) => {
+  console.log('\n=== PAYOUT REQUEST RECEIVED ===');
 
-app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) => {
   try {
-    const accessToken = req.query.access_token;
+    const { accessToken, pageId, payoutId, amount, subtype } = req.body;
 
-    console.log("→ PAYOUT REQUEST RECEIVED");
-
-    const fbResponse = await fetch("https://www.facebook.com/api/graphql/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://www.facebook.com/",
-        "Origin": "https://www.facebook.com",
-        "x-fb-friendly-name": "UseMutatePayoutCometLinkPayeeSubtypeQuery",
-      },
-      body: JSON.stringify(req.body),
-    });
-
-    const text = await fbResponse.text();
-    console.log("STATUS:", fbResponse.status);
-    console.log("RAW RESPONSE:", text.substring(0, 800));
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
+    if (!accessToken || !pageId || !payoutId) {
+      console.error('Missing required fields');
+      return res.status(400).json({ error: 'Missing accessToken, pageId or payoutId' });
     }
 
-    return res.status(200).json({ success: true, data });
-  } catch (e) {
-    console.error("ERROR:", e.message);
-    return res.status(500).json({ success: false, error: e.message });
+    console.log('Payout Details:', { pageId, payoutId, subtype, amount });
+
+    // Facebook Graph API Payout Request
+    const fbUrl = `https://graph.facebook.com/v24.1/${pageId}/payouts`;
+
+    const payload = {
+      payout_id: payoutId,
+      // Add other required fields based on your needs
+      // amount, subtype, etc.
+    };
+
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    };
+
+    console.log('Sending to Facebook:', fbUrl);
+
+    const fbResponse = await axios.post(fbUrl, payload, config);
+
+    console.log('STATUS:', fbResponse.status);
+    console.log('HEADERS:', JSON.stringify(fbResponse.headers, null, 2));
+    console.log('FULL RAW RESPONSE:', JSON.stringify(fbResponse.data, null, 2));
+
+    // Send success back to extension
+    res.status(200).json({
+      success: true,
+      message: 'Payout request sent to Facebook',
+      fbResponse: fbResponse.data
+    });
+
+  } catch (error) {
+    console.error('=== PAYOUT ERROR ===');
+    console.error('Message:', error.message);
+
+    if (error.response) {
+      console.error('FB Status:', error.response.status);
+      console.error('FB Error Data:', JSON.stringify(error.response.data, null, 2));
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      fbError: error.response?.data || null
+    });
   }
 });
 
-const PORT = process.env.PORT || 8080;
+// Health Check
+app.get('/', (req, res) => {
+  res.json({ status: 'Server is running on port ' + PORT });
+});
+
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
