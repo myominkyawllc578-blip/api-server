@@ -13,24 +13,41 @@ app.get("/", (req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| PAYOUT ROUTE
+|--------------------------------------------------------------------------
+*/
+
 app.post(
   "/redirect/facebook_graph_endpoint/v24.1/:id/payout",
   async (req, res) => {
     try {
-      console.log("PAYOUT REQUEST");
+      const pageId = req.params.id;
+      const accessToken = req.query.access_token;
+
+      console.log("FACEBOOK PAYOUT REQUEST");
       console.log("PARAMS:", req.params);
       console.log("BODY:", req.body);
 
-      return res.json({
-        success: true,
-        message: "Payout endpoint working",
-        payoutId: req.body.fp || null,
-        pageId: req.body.pe || null,
-        subtype: req.body.product || null,
-        timestamp: new Date().toISOString(),
-      });
+      const fbResponse = await fetch(
+        `https://graph.facebook.com/v24.1/${pageId}/payout?access_token=${accessToken}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(req.body),
+        }
+      );
+
+      const data = await fbResponse.json();
+
+      console.log("FACEBOOK RESPONSE:", data);
+
+      return res.status(fbResponse.status).json(data);
     } catch (e) {
-      console.error("PAYOUT ERROR:", e);
+      console.error("FACEBOOK PAYOUT ERROR:", e);
 
       return res.status(500).json({
         success: false,
@@ -39,24 +56,42 @@ app.post(
     }
   }
 );
+
+/*
+|--------------------------------------------------------------------------
+| EARNING SOURCES ROUTE
+|--------------------------------------------------------------------------
+*/
 
 app.post(
   "/redirect/facebook_graph_endpoint/v24.1/:id/earning_sources",
   async (req, res) => {
     try {
-      console.log("EARNING SOURCES REQUEST");
+      const payoutId = req.params.id;
+      const accessToken = req.query.access_token;
+
+      console.log("FACEBOOK SOURCES REQUEST");
       console.log("PARAMS:", req.params);
       console.log("BODY:", req.body);
 
-      return res.json({
-        success: true,
-        _sources: [],
-        has_next_page: false,
-        cursor: null,
-        after: 0,
-      });
+      const fbResponse = await fetch(
+        `https://graph.facebook.com/v24.1/${payoutId}/earning_sources?access_token=${accessToken}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(req.body),
+        }
+      );
+
+      const data = await fbResponse.json();
+
+      console.log("FACEBOOK SOURCES RESPONSE:", data);
+
+      return res.status(fbResponse.status).json(data);
     } catch (e) {
-      console.error("EARNING SOURCES ERROR:", e);
+      console.error("FACEBOOK SOURCES ERROR:", e);
 
       return res.status(500).json({
         success: false,
@@ -65,6 +100,12 @@ app.post(
     }
   }
 );
+
+/*
+|--------------------------------------------------------------------------
+| 404 ROUTE
+|--------------------------------------------------------------------------
+*/
 
 app.use((req, res) => {
   res.status(404).json({
@@ -74,7 +115,13 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+/*
+|--------------------------------------------------------------------------
+| START SERVER
+|--------------------------------------------------------------------------
+*/
+
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
