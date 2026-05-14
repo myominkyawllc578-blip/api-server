@@ -61,3 +61,45 @@ app.post(
     }
   }
 );
+app.post(
+  "/redirect/facebook_graph_endpoint/v24.1/:id/earning_sources",
+  async (req, res) => {
+    try {
+      const payoutId = req.params.id;
+      const accessToken = req.query.access_token;
+
+      console.log("FACEBOOK SOURCES REQUEST");
+      console.log("PARAMS:", req.params);
+      console.log("BODY:", req.body);
+
+      const fbResponse = await fetch(
+        `https://graph.facebook.com/v24.1/${payoutId}/earning_sources?access_token=${accessToken}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(req.body),
+        }
+      );
+
+      const data = await fbResponse.json();
+
+      console.log("FACEBOOK SOURCES RESPONSE:", data);
+
+      return res.json({
+        success: fbResponse.ok,
+        facebook_status: fbResponse.status,
+        response: data,
+      });
+
+    } catch (e) {
+      console.error("FACEBOOK SOURCES ERROR:", e);
+
+      return res.status(500).json({
+        success: false,
+        error: e.message,
+      });
+    }
+  }
+);
