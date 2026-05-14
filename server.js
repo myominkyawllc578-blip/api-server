@@ -82,11 +82,7 @@ app.post(
 
       console.log("FACEBOOK SOURCES RESPONSE:", data);
 
-      return res.json({
-        success: fbResponse.ok,
-        facebook_status: fbResponse.status,
-        response: data,
-      });
+      return res.status(200).json(data);
 
     } catch (e) {
       console.error("FACEBOOK SOURCES ERROR:", e);
