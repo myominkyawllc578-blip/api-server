@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const fetch = require("node-fetch");
 
 const app = express();
 
@@ -8,6 +9,9 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => res.json({ status: "✅ Server is running" }));
+
+// ==================== PROXY SETTINGS ====================
+const PROXY = "http://user-spn5hz794h-country-us:C23iKelo2T1nE\~neqm@isp.decodo.com:10001";
 
 app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) => {
   try {
@@ -20,15 +24,8 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${accessToken}`,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": "https://www.facebook.com/",
-        "Origin": "https://www.facebook.com",
-        "x-fb-friendly-name": "UseMutatePayoutCometLinkPayeeSubtypeQuery",
-        "x-fb-lsd": "J4CYFVYzAxRbPMypAjAeZ",
-        "x-asbd-id": "336545",
-        "accept-language": "en-US,en;q=0.9",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
       },
       body: JSON.stringify(req.body),
     });
