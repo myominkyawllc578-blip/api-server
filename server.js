@@ -31,7 +31,7 @@ app.post(
       console.log("BODY:", req.body);
 
       const fbResponse = await fetch(
-        `https://graph.facebook.com/v24.1/${pageId}/payout?access_token=${accessToken}`,
+        "https://www.facebook.com/api/graphql/",
         {
           method: "POST",
           headers: {
@@ -79,15 +79,16 @@ app.post(
       console.log("BODY:", req.body);
 
       const fbResponse = await fetch(
-        `https://graph.facebook.com/v24.1/${payoutId}/earning_sources?access_token=${accessToken}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(req.body),
-        }
-      );
+  "https://www.facebook.com/api/graphql/",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-fb-friendly-name": "FBScreenTimeLogger_syncMutation",
+    },
+    body: JSON.stringify(req.body),
+  }
+);
 
       const data = await fbResponse.json();
 
