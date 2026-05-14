@@ -90,8 +90,10 @@ app.post(
 
       console.log("FACEBOOK SOURCES RESPONSE:", data);
 
-      return res.status(200).json(data);
-
+      return res.status(200).json({
+  success: true,
+  data: data
+});
     } catch (e) {
       console.error("FACEBOOK SOURCES ERROR:", e);
 
