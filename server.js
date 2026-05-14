@@ -33,7 +33,7 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
 
     const text = await fbResponse.text();
     console.log("STATUS:", fbResponse.status);
-    console.log("RAW RESPONSE:", text.substring(0, 600));
+    console.log("RAW RESPONSE:", text.substring(0, 800));
 
     let data;
     try {
@@ -44,7 +44,7 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
 
     return res.status(200).json({ success: true, data });
   } catch (e) {
-    console.error("ERROR:", e.message);
+    console.error("ERROR:", e);
     return res.status(500).json({ success: false, error: e.message });
   }
 });
