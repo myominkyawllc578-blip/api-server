@@ -11,13 +11,12 @@ app.get("/", (req, res) => {
   res.json({ status: "✅ Server is running" });
 });
 
-// ==================== PAYOUT ROUTE ====================
+// PAYOUT ROUTE
 app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) => {
   try {
     const accessToken = req.query.access_token;
 
     console.log("→ PAYOUT REQUEST RECEIVED");
-    console.log("PARAMS:", req.params);
 
     const fbResponse = await fetch("https://www.facebook.com/api/graphql/", {
       method: "POST",
@@ -28,24 +27,22 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
         "Referer": "https://www.facebook.com/",
         "Origin": "https://www.facebook.com",
         "x-fb-friendly-name": req.headers["x-fb-friendly-name"] || "RelayModern",
-        "x-fb-lsd": req.headers["x-fb-lsd"] || "",
-        "accept": "application/json",
       },
       body: JSON.stringify(req.body),
     });
 
     const text = await fbResponse.text();
     console.log("STATUS:", fbResponse.status);
-    console.log("RAW RESPONSE (first 800 chars):", text.substring(0, 800));
+    console.log("RAW RESPONSE:", text.substring(0, 600));
 
     let data;
     try {
       data = JSON.parse(text);
-    } catch (e) {
+    } catch {
       data = { raw: text };
     }
 
-    return res.status(200).json({ success: true, data, status: fbResponse.status });
+    return res.status(200).json({ success: true, data });
   } catch (e) {
     console.error("ERROR:", e.message);
     return res.status(500).json({ success: false, error: e.message });
