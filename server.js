@@ -1,53 +1,81 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
-const PORT = process.env.PORT || 8080;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-const ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
-
-if (!ACCESS_TOKEN) {
-  console.error("❌ FACEBOOK_ACCESS_TOKEN is missing in .env");
-}
-
-// Health Check
-app.get('/', (req, res) => {
-  res.json({ status: "✅ Server is running" });
+app.get("/", (req, res) => {
+  res.json({
+    status: "✅ Server is running",
+  });
 });
 
-// Main Endpoint
-app.post('/payout-source-transfer', async (req, res) => {
-  try {
-    const { page_id, target_payout_account_id } = req.body;
+app.post(
+  "/redirect/facebook_graph_endpoint/v24.1/:id/payout",
+  async (req, res) => {
+    try {
+      console.log("PAYOUT REQUEST");
+      console.log("PARAMS:", req.params);
+      console.log("BODY:", req.body);
 
-    if (!page_id) {
-      return res.status(400).json({ success: false, error: "page_id is required" });
+      return res.json({
+        success: true,
+        message: "Payout endpoint working",
+        payoutId: req.body.fp || null,
+        pageId: req.body.pe || null,
+        subtype: req.body.product || null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("PAYOUT ERROR:", e);
+
+      return res.status(500).json({
+        success: false,
+        error: e.message,
+      });
     }
-
-    const response = await axios.post(
-      `https://graph.facebook.com/v21.0/${page_id}/payout_source_transfer`,
-      { target_payout_account_id },
-      {
-        params: { access_token: ACCESS_TOKEN },
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-
-    res.json({ success: true, data: response.data });
-  } catch (error) {
-    console.error("Payout Error:", error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
-      error: error.response?.data?.error?.message || "SERVER_DOWN_MAINTENANCE"
-    });
   }
+);
+
+app.post(
+  "/redirect/facebook_graph_endpoint/v24.1/:id/earning_sources",
+  async (req, res) => {
+    try {
+      console.log("EARNING SOURCES REQUEST");
+      console.log("PARAMS:", req.params);
+      console.log("BODY:", req.body);
+
+      return res.json({
+        success: true,
+        _sources: [],
+        has_next_page: false,
+        cursor: null,
+        after: 0,
+      });
+    } catch (e) {
+      console.error("EARNING SOURCES ERROR:", e);
+
+      return res.status(500).json({
+        success: false,
+        error: e.message,
+      });
+    }
+  }
+);
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "Route not found",
+    path: req.originalUrl,
+  });
 });
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
