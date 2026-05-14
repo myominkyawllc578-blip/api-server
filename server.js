@@ -34,37 +34,32 @@ app.post(
         "https://www.facebook.com/api/graphql/",
         {
           method: "POST",
-      headers: {
-  "Content-Type": "application/json",
-  
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(req.body),
         }
       );
 
       const text = await fbResponse.text();
+      console.log("FACEBOOK RAW RESPONSE:", text);
 
-console.log("FACEBOOK RAW RESPONSE:", text);
-
-let data;
-
-try {
-  data = JSON.parse(text);
-} catch {
-  data = {
-    raw: text,
-  };
-    }
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text };
+      }
 
       console.log("FACEBOOK RESPONSE:", data);
 
       return res.status(200).json({
-  success: true,
-  data: data
-});
+        success: true,
+        data: data
+      });
 
     } catch (e) {
       console.error("FACEBOOK PAYOUT ERROR:", e);
-
       return res.status(500).json({
         success: false,
         error: e.message,
@@ -91,39 +86,34 @@ app.post(
       console.log("BODY:", req.body);
 
       const fbResponse = await fetch(
-  "https://www.facebook.com/api/graphql/",
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      
-    body: JSON.stringify(req.body),
-  }
-);
+        "https://www.facebook.com/api/graphql/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(req.body),
+        }
+      );
 
       const text = await fbResponse.text();
+      console.log("FACEBOOK RAW RESPONSE:", text);
 
-console.log("FACEBOOK RAW RESPONSE:", text);
-
-let data;
-
-try {
-  data = JSON.parse(text);
-} catch {
-  data = {
-    raw: text,
-  };
-}
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { raw: text };
+      }
 
       console.log("FACEBOOK SOURCES RESPONSE:", data);
 
       return res.status(200).json({
-  success: true,
-  data: data
-});
+        success: true,
+        data: data
+      });
     } catch (e) {
       console.error("FACEBOOK SOURCES ERROR:", e);
-
       return res.status(500).json({
         success: false,
         error: e.message,
