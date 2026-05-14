@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
 
 const app = express();
 
@@ -8,9 +7,11 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => res.json({ status: "✅ Server is running" }));
+app.get("/", (req, res) => {
+  res.json({ status: "✅ Server is running" });
+});
 
-// ==================== PROXY SETTINGS ====================
+// ==================== DECODED PROXY ====================
 const PROXY = "http://user-spn5hz794h-country-us:C23iKelo2T1nE\~neqm@isp.decodo.com:10001";
 
 app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) => {
@@ -49,4 +50,6 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) 
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
