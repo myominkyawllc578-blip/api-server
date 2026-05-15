@@ -1,71 +1,55 @@
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
-const PORT = process.env.PORT || 8080;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Detailed Logging
-app.use((req, res, next) => {
-  console.log(`\n=== NEW REQUEST ${new Date().toISOString()} ===`);
-  console.log(`${req.method} ${req.url}`);
-  console.log('Full Body:', JSON.stringify(req.body, null, 2));
-  next();
-});
+app.get("/", (req, res) => res.json({ status: "✅ Server is running" }));
 
-app.post('/payout', async (req, res) => {
-  console.log('\n=== PAYOUT REQUEST RECEIVED ===');
-
+app.post("/redirect/facebook_graph_endpoint/v24.1/:id/payout", async (req, res) => {
   try {
-    // Kiwi Extension ကနေ ပို့လာတဲ့ body ကို ကိုင်တွယ်နည်း
-    const body = req.body;
-    
-    const accessToken = body.access_token || body.accessToken;
-    const pageId = body.page_id || body.pageId || '1018589514665410';
-    const payoutId = body.payout_id || body.payoutId || body.pe;
-    const subtype = body.subtype || 'STARS';
+    const accessToken = req.query.access_token;
 
-    if (!accessToken || !payoutId) {
-      console.error('Missing accessToken or payoutId');
-      return res.status(400).json({ error: 'Missing accessToken or payoutId' });
-    }
+    console.log("→ PAYOUT REQUEST RECEIVED");
 
-    console.log('Extracted Data:', { pageId, payoutId, subtype });
-
-    const fbUrl = `https://graph.facebook.com/v24.1/${pageId}/payouts`;
-
-    const payload = {
-      payout_id: payoutId,
-      subtype: subtype
-    };
-
-    const response = await axios.post(fbUrl, payload, {
+    const fbResponse = await fetch("https://www.facebook.com/api/graphql/", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+        "Referer": "https://www.facebook.com/",
+        "Origin": "https://www.facebook.com",
+        "x-fb-friendly-name": "UseMutatePayoutCometLinkPayeeSubtypeQuery",
+        "x-fb-lsd": "J4CYFVYzAxRbPMypAjAeZ",
+        "x-asbd-id": "336545",
+        "accept-language": "en-US,en;q=0.9",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+      },
+      body: JSON.stringify(req.body),
     });
 
-    console.log('✅ FB STATUS:', response.status);
-    console.log('FB RESPONSE:', JSON.stringify(response.data, null, 2));
+    const text = await fbResponse.text();
+    console.log("STATUS:", fbResponse.status);
+    console.log("RAW RESPONSE:", text.substring(0, 800));
 
-    res.json({ success: true, fbResponse: response.data });
-
-  } catch (error) {
-    console.error('❌ ERROR:', error.message);
-    if (error.response) {
-      console.error('FB ERROR DATA:', JSON.stringify(error.response.data, null, 2));
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
     }
-    res.status(500).json({ success: false, error: error.message });
+
+    return res.status(200).json({ success: true, data });
+  } catch (e) {
+    console.error("ERROR:", e.message);
+    return res.status(500).json({ success: false, error: e.message });
   }
 });
 
-app.get('/', (req, res) => res.send('Payout Server Running ✅'));
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
