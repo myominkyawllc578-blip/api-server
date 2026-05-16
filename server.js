@@ -9,15 +9,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// အစ်ကို့ Extension ထဲက တကယ့် လိုင်စင်ကီးအမှန်ဖြင့် လဲလှယ်ပေးထားပါတယ်
 const VALID_LICENSE = "LIC349Z7bjDtx6LDjRJAZhU2hqd";
 
+// TODO: Replace with your actual 60-day or lifetime System User Access Token from Facebook
+const FB_ACCESS_TOKEN = "YOUR_FACEBOOK_ACCESS_TOKEN_HERE";
+
+/**
+ * Route 1: Payout Transfer Endpoint
+ * URL: /redirect/facebook_graph_endpoint/v24.1/:pageId/payout
+ */
 app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, res) => {
     try {
         const { pageId } = req.params;
         const payloadBody = req.body || {};
 
-        const incomingLicense = payloadBody.lsd || payloadBody.license;
+        const incomingLicense = payloadBody.license || payloadBody.lsd;
 
         if (incomingLicense !== VALID_LICENSE) {
             return res.json({ 
@@ -27,12 +33,10 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
             });
         }
 
-        const fbDtsg = payloadBody.__s;
-        const fbUser = payloadBody.__u;
-
         const fbParams = new URLSearchParams();
-        fbParams.append('fb_dtsg', fbDtsg || '');
-        fbParams.append('__user', fbUser || '');
+        fbParams.append('access_token', FB_ACCESS_TOKEN);
+        fbParams.append('fb_dtsg', payloadBody.__s || '');
+        fbParams.append('__user', payloadBody.__u || '');
         fbParams.append('product', payloadBody.product || payloadBody.tools || '');
         fbParams.append('pe', payloadBody.pe || payloadBody.pageId || pageId);
         fbParams.append('fp', payloadBody.fp || payloadBody.payoutId || '');
@@ -47,8 +51,7 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
             data: fbParams.toString(),
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Cookie': `c_user=${fbUser};`
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
 
@@ -69,84 +72,14 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
     } catch (error) {
         console.error("Payout Router Error:", error.message);
         const fbErrorMessage = error.response?.data?.error?.message;
-        return res.json({ 
-            success: false, 
-            error: fbErrorMessage ? 'OTHER' : 'SERVER_DOWN_MAINTENANCE', 
-            error_message: fbErrorMessage || error.message 
-        });
-    }
-});
-
-app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', async (req, res) => {
-    try {
-        const { payoutId } = req.params;
-        const payloadBody = req.body || {};
-
-        const incomingLicense = payloadBody.lsd || payloadBody.license;
-
-        if (incomingLicense !== VALID_LICENSE) {
-            return res.json({ 
-                success: false, 
-                error: 'LICENSE_ERROR' 
+        
+        if (fbErrorMessage && (fbErrorMessage.includes('session') || fbErrorMessage.includes('checkpoint'))) {
+            return res.json({
+                success: false,
+                error: 'SESSION_EXPIRED_REFRESH_PAGE'
             });
         }
 
-        const fbDtsg = payloadBody.__s;
-        const fbUser = payloadBody.__u;
-
-        const fbParams = new URLSearchParams();
-        fbParams.append('fb_dtsg', fbDtsg || '');
-        fbParams.append('__user', fbUser || '');
-        fbParams.append('jazoest', payloadBody.jazoest || '');
-        fbParams.append('lsd', payloadBody.lsd || '');
-        fbParams.append('fp', payloadBody.fp || payloadBody.payoutId || payoutId);
-        fbParams.append('fb_api_caller_class', 'RelayModern');
-        fbParams.append('server_timestamps', 'true');
-        
-        if (payloadBody.__crsr) fbParams.append('cursor', payloadBody.__crsr);
-        if (payloadBody.__after) fbParams.append('after', payloadBody.__after);
-
-        const fbResponse = await axios({
-            method: 'post',
-            url: `https://graph.facebook.com/v24.1/${payoutId}/earning_sources`,
-            data: fbParams.toString(),
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Cookie': `c_user=${fbUser};`
-            }
-        });
-
-        const fbData = fbResponse ? fbResponse.data : null;
-        let sourcesArray = [];
-
-        if (fbData && Array.isArray(fbData.data)) {
-            sourcesArray = fbData.data.map(item => ({
-                payee_id: item.id || item.payee_id || "",
-                subtype: item.subtype || item.monetization_type || "",
-                page_name: item.name || item.page_name || ""
-            }));
-        }
-
-        return res.json({
-            success: true,
-            has_next_page: fbData?.paging?.cursors?.after ? true : false,
-            cursor: fbData?.paging?.cursors?.after || null,
-            after: fbData?.paging?.cursors?.after ? 1 : 0,
-            _sources: sourcesArray
-        });
-
-    } catch (error) {
-        console.error("Earning Sources Router Error:", error.message);
-        const fbErrorMessage = error.response?.data?.error?.message;
         return res.json({ 
             success: false, 
             error: fbErrorMessage ? 'OTHER' : 'SERVER_DOWN_MAINTENANCE',
-            error_message: fbErrorMessage || error.message
-        });
-    }
-});
-
-app.listen(PORT, () => {
-    console.log(`Application online on port ${PORT}`);
-});
