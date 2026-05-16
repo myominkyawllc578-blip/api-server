@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const VALID_LICENSE = "LICKPAHJWZXSGQX";
-const FB_ACCESS_TOKEN = "EAARDHb1GllgBReXY3DA1lwyppzsORm4K6VSDdooOq8K4QutoERJN1mjUSZCm4cvnFMvwIBW0Bv77rY2MRwxhTkdlZBWMsXDuimj7XY4tZAhFZAoJoOYSKUbJKYANnm51lZC6L3nWJZBi2xNBvZBHsj48LamciPiRZCNBZBkyhbInlJ4tPpIXZAKiBgIiQWrlg1YobpioFqB73490xj3TG4RTb08CA1ZCJGAvNVftbEdvmw6epY5XEKr";
+const FB_ACCESS_TOKEN = "EAARDHb1GllgBRfjipi3LRfUgZClBjarH6TMxl8BFchIZBhBjqBxBP5hcBc7ZBmW17X8jxYkk7uDXwIxYF5UgUqrLjh8AXEwTJ6gNgSOiFsV5Ov9z94iZCuji0Pp5oWGZAqVZCfO3fOT6mx7GfFjwinXGcMUGxgZCETKtYoyEakcqfvYAZCXxz1fM1aAdSeblK7jzWFBVLy4ZC8dRJXr4T2x21rlKExRG9u2oaXZCtlZAYE7DdlB4NZBxPgZDZD";
 
 app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, res) => {
     try {
