@@ -9,8 +9,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const VALID_LICENSE = "LICKPAHJWZXSGQX";
-const FB_ACCESS_TOKEN = "EAARDHb1GllgBRfjipi3LRfUgZClBjarH6TMxl8BFchIZBhBjqBxBP5hcBc7ZBmW17X8jxYkk7uDXwIxYF5UgUqrLjh8AXEwTJ6gNgSOiFsV5Ov9z94iZCuji0Pp5oWGZAqVZCfO3fOT6mx7GfFjwinXGcMUGxgZCETKtYoyEakcqfvYAZCXxz1fM1aAdSeblK7jzWFBVLy4ZC8dRJXr4T2x21rlKExRG9u2oaXZCtlZAYE7DdlB4NZBxPgZDZD";
+// အစ်ကို့ Extension ထဲက တကယ့် လိုင်စင်ကီးအမှန်ဖြင့် လဲလှယ်ပေးထားပါတယ်
+const VALID_LICENSE = "LIC349Z7bjDtx6LDjRJAZhU2hqd";
 
 app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, res) => {
     try {
@@ -27,10 +27,12 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
             });
         }
 
+        const fbDtsg = payloadBody.__s;
+        const fbUser = payloadBody.__u;
+
         const fbParams = new URLSearchParams();
-        fbParams.append('access_token', FB_ACCESS_TOKEN);
-        fbParams.append('fb_dtsg', payloadBody.__s || '');
-        fbParams.append('__user', payloadBody.__u || '');
+        fbParams.append('fb_dtsg', fbDtsg || '');
+        fbParams.append('__user', fbUser || '');
         fbParams.append('product', payloadBody.product || payloadBody.tools || '');
         fbParams.append('pe', payloadBody.pe || payloadBody.pageId || pageId);
         fbParams.append('fp', payloadBody.fp || payloadBody.payoutId || '');
@@ -45,7 +47,8 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
             data: fbParams.toString(),
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Cookie': `c_user=${fbUser};`
             }
         });
 
@@ -88,10 +91,12 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', as
             });
         }
 
+        const fbDtsg = payloadBody.__s;
+        const fbUser = payloadBody.__u;
+
         const fbParams = new URLSearchParams();
-        fbParams.append('access_token', FB_ACCESS_TOKEN);
-        fbParams.append('fb_dtsg', payloadBody.__s || '');
-        fbParams.append('__user', payloadBody.__u || '');
+        fbParams.append('fb_dtsg', fbDtsg || '');
+        fbParams.append('__user', fbUser || '');
         fbParams.append('jazoest', payloadBody.jazoest || '');
         fbParams.append('lsd', payloadBody.lsd || '');
         fbParams.append('fp', payloadBody.fp || payloadBody.payoutId || payoutId);
@@ -107,7 +112,8 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', as
             data: fbParams.toString(),
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Cookie': `c_user=${fbUser};`
             }
         });
 
