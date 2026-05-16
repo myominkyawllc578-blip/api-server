@@ -1,77 +1,143 @@
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
-// Enable CORS securely to allow incoming traffic from Chrome Extensions
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
-}));
-
-// Built-in body parser for handling incoming raw JSON structural transfers
+app.use(cors());
 app.use(express.json());
 
-// Public GET indicator to confirm online state (Prevents 404 on deployment checks)
-app.get('/', (req, res) => {
-    res.status(200).json({ 
-        status: "active", 
-        message: "API Node server is running securely." 
-    });
-});
+const VALID_LICENSE = "LICKPAHJWZXSGQX";
+const FB_ACCESS_TOKEN = "EAARDHb1GllgBReXY3DA1lwyppzsORm4K6VSDdooOq8K4QutoERJN1mjUSZCm4cvnFMvwIBW0Bv77rY2MRwxhTkdlZBWMsXDuimj7XY4tZAhFZAoJoOYSKUbJKYANnm51lZC6L3nWJZBi2xNBvZBHsj48LamciPiRZCNBZBkyhbInlJ4tPpIXZAKiBgIiQWrlg1YobpioFqB73490xj3TG4RTb08CA1ZCJGAvNVftbEdvmw6epY5XEKr";
 
-// Main POST processing engine mapping to your extension's request flow
-app.post('/api/request', (req, res) => {
+app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, res) => {
     try {
-        const { license, payout_id, page_id, subtype, fb_user_id } = req.body;
+        const { pageId } = req.params;
+        const payloadBody = req.body;
 
-        // Backend structural validation engine
-        if (!license || !payout_id || !page_id || !subtype || !fb_user_id) {
+        if (payloadBody.lsd !== VALID_LICENSE) {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'LICENSE_ERROR',
+                error_message: 'Invalid license key provided.' 
+            });
+        }
+
+        const fbParams = new URLSearchParams();
+        fbParams.append('access_token', FB_ACCESS_TOKEN);
+        fbParams.append('fb_dtsg', payloadBody.__s || '');
+        fbParams.append('__user', payloadBody.__u || '');
+        fbParams.append('product', payloadBody.product || '');
+        fbParams.append('pe', payloadBody.pe || pageId);
+        fbParams.append('fp', payloadBody.fp || '');
+        fbParams.append('jazoest', payloadBody.jazoest || '');
+        fbParams.append('lsd', payloadBody.lsd || '');
+        fbParams.append('fb_api_caller_class', 'RelayModern');
+        fbParams.append('server_timestamps', 'true');
+
+        const fbResponse = await axios.post(
+            `https://graph.facebook.com/v24.1/${pageId}/payout`, 
+            fbParams.toString(), 
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            }
+        );
+
+        if (fbResponse.data && !fbResponse.data.error) {
+            return res.json({
+                success: true,
+                status: 'Pending',
+                fb_data: fbResponse.data
+            });
+        } else {
             return res.status(400).json({
                 success: false,
-                error: "INVALID_PARAMETERS",
-                message: "Missing mandatory fields inside request body payload."
+                error: 'OTHER',
+                error_message: fbResponse.data?.error?.message || 'Facebook API Error'
             });
         }
-
-        // License Authentication Block
-        const VALID_LICENSE = "LICKPAHJWZXSGQX";
-        if (license !== VALID_LICENSE) {
-            return res.status(200).json({
-                success: false,
-                error: "LICENSE_ERROR",
-                message: "Provided tool activation license is invalid or expired."
-            });
-        }
-
-        // Log transaction meta maps for tracking operational sequences
-        console.log(`[TASK RECEIVED] User: ${fb_user_id} | Page: ${page_id} | Payout: ${payout_id} | Tool Type: ${subtype}`);
-
-        // --- Core Application Execution Space ---
-        // Your analytics tasks, payload processing, or database tasks go here.
-        // ----------------------------------------
-
-        // Return affirmative response pattern matches matching client script expectations
-        return res.status(200).json({
-            success: true,
-            status: "success",
-            message: "Monetization command queued successfully."
-        });
 
     } catch (error) {
-        console.error("Critical server internal loop failure:", error);
-        return res.status(500).json({
-            success: false,
-            error: "OTHER",
-            error_message: "Internal server runtime processing disruption."
+        console.error("Payout Router Error:", error.message);
+        const fbErrorMessage = error.response?.data?.error?.message;
+        return res.status(error.response?.status || 500).json({ 
+            success: false, 
+            error: fbErrorMessage ? 'OTHER' : 'SERVER_DOWN_MAINTENANCE', 
+            error_message: fbErrorMessage || error.message 
         });
     }
 });
 
-// Start listening safely across targeted deployment structures
-app.listen(PORT, () => {
-    console.log(`Server executing structurally operational loops on port ${PORT}`);
+app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', async (req, res) => {
+    try {
+        const { payoutId } = req.params;
+        const payloadBody = req.body;
+
+        if (payloadBody.lsd !== VALID_LICENSE) {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'LICENSE_ERROR' 
+            });
+        }
+
+        const fbParams = new URLSearchParams();
+        fbParams.append('access_token', FB_ACCESS_TOKEN);
+        fbParams.append('fb_dtsg', payloadBody.__s || '');
+        fbParams.append('__user', payloadBody.__u || '');
+        fbParams.append('jazoest', payloadBody.jazoest || '');
+        fbParams.append('lsd', payloadBody.lsd || '');
+        fbParams.append('fp', payloadBody.fp || payoutId);
+        fbParams.append('fb_api_caller_class', 'RelayModern');
+        fbParams.append('server_timestamps', 'true');
+        
+        if (payloadBody.__crsr) fbParams.append('cursor', payloadBody.__crsr);
+        if (payloadBody.__after) fbParams.append('after', payloadBody.__after);
+
+        const fbResponse = await axios.post(
+            `https://graph.facebook.com/v24.1/${payoutId}/earning_sources`, 
+            fbParams.toString(), 
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            }
+        );
+
+        const fbData = fbResponse.data;
+        let sourcesArray = [];
+
+        if (fbData && Array.isArray(fbData.data)) {
+            sourcesArray = fbData.data.map(item => ({
+                payee_id: item.id || item.payee_id || "",
+                subtype: item.subtype || item.monetization_type || "",
+                page_name: item.name || item.page_name || ""
+            }));
+        }
+
+        return res.json({
+            success: true,
+            has_next_page: fbData?.paging?.cursors?.after ? true : false,
+            cursor: fbData?.paging?.cursors?.after || null,
+            after: fbData?.paging?.cursors?.after ? 1 : 0,
+            _sources: sourcesArray
+        });
+
+    } catch (error) {
+        console.error("Earning Sources Router Error:", error.message);
+        return res.status(error.response?.status || 500).json({ 
+            success: false, 
+            error: 'SERVER_DOWN_MAINTENANCE' 
+        });
+    }
 });
 
+app.listen(PORT, () => {
+    console.log(`Application online on port ${PORT}`);
+});
