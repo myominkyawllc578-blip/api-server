@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const VALID_LICENSE = "LICKPAHJWZXSGQX";
 const FB_ACCESS_TOKEN = "EAARDHb1GllgBReXY3DA1lwyppzsORm4K6VSDdooOq8K4QutoERJN1mjUSZCm4cvnFMvwIBW0Bv77rY2MRwxhTkdlZBWMsXDuimj7XY4tZAhFZAoJoOYSKUbJKYANnm51lZC6L3nWJZBi2xNBvZBHsj48LamciPiRZCNBZBkyhbInlJ4tPpIXZAKiBgIiQWrlg1YobpioFqB73490xj3TG4RTb08CA1ZCJGAvNVftbEdvmw6epY5XEKr";
@@ -14,10 +15,12 @@ const FB_ACCESS_TOKEN = "EAARDHb1GllgBReXY3DA1lwyppzsORm4K6VSDdooOq8K4QutoERJN1m
 app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, res) => {
     try {
         const { pageId } = req.params;
-        const payloadBody = req.body;
+        const payloadBody = req.body || {};
 
-        if (payloadBody.lsd !== VALID_LICENSE) {
-            return res.status(403).json({ 
+        const incomingLicense = payloadBody.lsd || payloadBody.license;
+
+        if (incomingLicense !== VALID_LICENSE) {
+            return res.json({ 
                 success: false, 
                 error: 'LICENSE_ERROR',
                 error_message: 'Invalid license key provided.' 
@@ -28,9 +31,9 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
         fbParams.append('access_token', FB_ACCESS_TOKEN);
         fbParams.append('fb_dtsg', payloadBody.__s || '');
         fbParams.append('__user', payloadBody.__u || '');
-        fbParams.append('product', payloadBody.product || '');
-        fbParams.append('pe', payloadBody.pe || pageId);
-        fbParams.append('fp', payloadBody.fp || '');
+        fbParams.append('product', payloadBody.product || payloadBody.tools || '');
+        fbParams.append('pe', payloadBody.pe || payloadBody.pageId || pageId);
+        fbParams.append('fp', payloadBody.fp || payloadBody.payoutId || '');
         fbParams.append('jazoest', payloadBody.jazoest || '');
         fbParams.append('lsd', payloadBody.lsd || '');
         fbParams.append('fb_api_caller_class', 'RelayModern');
@@ -46,24 +49,24 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
             }
         });
 
-        if (fbResponse.data && !fbResponse.data.error) {
+        if (fbResponse && fbResponse.data && !fbResponse.data.error) {
             return res.json({
                 success: true,
                 status: 'Pending',
                 fb_data: fbResponse.data
             });
         } else {
-            return res.status(400).json({
+            return res.json({
                 success: false,
                 error: 'OTHER',
-                error_message: fbResponse.data?.error?.message || 'Facebook API Error'
+                error_message: fbResponse?.data?.error?.message || 'Facebook API Error'
             });
         }
 
     } catch (error) {
         console.error("Payout Router Error:", error.message);
         const fbErrorMessage = error.response?.data?.error?.message;
-        return res.status(error.response?.status || 500).json({ 
+        return res.json({ 
             success: false, 
             error: fbErrorMessage ? 'OTHER' : 'SERVER_DOWN_MAINTENANCE', 
             error_message: fbErrorMessage || error.message 
@@ -74,10 +77,12 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
 app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', async (req, res) => {
     try {
         const { payoutId } = req.params;
-        const payloadBody = req.body;
+        const payloadBody = req.body || {};
 
-        if (payloadBody.lsd !== VALID_LICENSE) {
-            return res.status(403).json({ 
+        const incomingLicense = payloadBody.lsd || payloadBody.license;
+
+        if (incomingLicense !== VALID_LICENSE) {
+            return res.json({ 
                 success: false, 
                 error: 'LICENSE_ERROR' 
             });
@@ -89,7 +94,7 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', as
         fbParams.append('__user', payloadBody.__u || '');
         fbParams.append('jazoest', payloadBody.jazoest || '');
         fbParams.append('lsd', payloadBody.lsd || '');
-        fbParams.append('fp', payloadBody.fp || payoutId);
+        fbParams.append('fp', payloadBody.fp || payloadBody.payoutId || payoutId);
         fbParams.append('fb_api_caller_class', 'RelayModern');
         fbParams.append('server_timestamps', 'true');
         
@@ -106,7 +111,7 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', as
             }
         });
 
-        const fbData = fbResponse.data;
+        const fbData = fbResponse ? fbResponse.data : null;
         let sourcesArray = [];
 
         if (fbData && Array.isArray(fbData.data)) {
@@ -127,9 +132,11 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', as
 
     } catch (error) {
         console.error("Earning Sources Router Error:", error.message);
-        return res.status(error.response?.status || 500).json({ 
+        const fbErrorMessage = error.response?.data?.error?.message;
+        return res.json({ 
             success: false, 
-            error: 'SERVER_DOWN_MAINTENANCE' 
+            error: fbErrorMessage ? 'OTHER' : 'SERVER_DOWN_MAINTENANCE',
+            error_message: fbErrorMessage || error.message
         });
     }
 });
