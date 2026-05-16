@@ -36,17 +36,15 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:pageId/payout', async (req, r
         fbParams.append('fb_api_caller_class', 'RelayModern');
         fbParams.append('server_timestamps', 'true');
 
-        const fbResponse = await axios.post(
-            `https://graph.facebook.com/v24.1/${pageId}/payout`, 
-            fbParams.toString(), 
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
+        const fbResponse = await axios({
+            method: 'post',
+            url: `https://graph.facebook.com/v24.1/${pageId}/payout`,
+            data: fbParams.toString(),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
-        );
+        });
 
         if (fbResponse.data && !fbResponse.data.error) {
             return res.json({
@@ -98,17 +96,15 @@ app.post('/redirect/facebook_graph_endpoint/v24.1/:payoutId/earning_sources', as
         if (payloadBody.__crsr) fbParams.append('cursor', payloadBody.__crsr);
         if (payloadBody.__after) fbParams.append('after', payloadBody.__after);
 
-        const fbResponse = await axios.post(
-            `https://graph.facebook.com/v24.1/${payoutId}/earning_sources`, 
-            fbParams.toString(), 
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
+        const fbResponse = await axios({
+            method: 'post',
+            url: `https://graph.facebook.com/v24.1/${payoutId}/earning_sources`,
+            data: fbParams.toString(),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
-        );
+        });
 
         const fbData = fbResponse.data;
         let sourcesArray = [];
