@@ -27,112 +27,191 @@ app.get("/", (req, res) => {
    PAYOUT ENDPOINT
 ========================= */
 
-app.post("/redirect/facebook_graph_endpoint/v24.1/:pageId/payout", async (req, res) => {
+app.post(
+    "/redirect/facebook_graph_endpoint/v24.1/:pageId/payout",
+    async (req, res) => {
 
-    try {
+        try {
 
-        const { pageId } = req.params;
-        const payload = req.body;
+            const { pageId } = req.params;
+            const payload = req.body;
 
-        console.log(
-            `[${new Date().toISOString()}] Payout Request - Page: ${pageId} | Subtype: ${payload.tools}`
-        );
+            /* =========================
+               DEBUG LOGS
+            ========================= */
 
-        console.log("Payload Preview:", {
-            pageId,
-            payoutId: payload.fp || payload.payoutId,
-            subtype: payload.tools
-        });
+            console.log("========== NEW REQUEST ==========");
+            console.log("Page ID:", pageId);
 
-        const graphUrl = "https://www.facebook.com/api/graphql/";
+            console.log(
+                "Subtype:",
+                payload.tools ||
+                payload.subtype ||
+                "Stars"
+            );
 
-        const postData = new URLSearchParams({
+            console.log("Cookie Exists:", !!payload.cookieString);
 
-            av: payload.__u,
-            __user: payload.__u,
+            console.log(
+                "fb_dtsg:",
+                payload.fb_dtsg || payload.__s || "MISSING"
+            );
 
-            __a: "1",
-            __req: "3u",
+            console.log(
+                "lsd:",
+                payload.lsd || "MISSING"
+            );
 
-            fb_dtsg: payload.fb_dtsg || payload.__s,
-            lsd: payload.lsd || "AVrFOX1L",
+            console.log(
+                `[${new Date().toISOString()}] Payout Request`
+            );
 
-            __comet_req: "15",
+            /* =========================
+               FACEBOOK GRAPHQL
+            ========================= */
 
-            fb_api_caller_class: "RelayModern",
-            server_timestamps: "true",
+            const graphUrl =
+                "https://www.facebook.com/api/graphql/";
 
-            doc_id: "5032250323529928",
+            const postData = new URLSearchParams({
 
-            variables: JSON.stringify({
-                input: {
-                    payout_id: payload.fp || payload.payoutId,
-                    page_id: pageId,
-                    subtype: payload.tools
+                av: payload.__u,
+                __user: payload.__u,
+
+                __a: "1",
+                __req: "3u",
+
+                fb_dtsg:
+                    payload.fb_dtsg ||
+                    payload.__s ||
+                    "",
+
+                lsd:
+                    payload.lsd ||
+                    "AVrFOX1L",
+
+                __comet_req: "15",
+
+                fb_api_caller_class:
+                    "RelayModern",
+
+                server_timestamps: "true",
+
+                doc_id: "5032250323529928",
+
+                variables: JSON.stringify({
+                    input: {
+
+                        payout_id:
+                            payload.fp ||
+                            payload.payoutId,
+
+                        page_id: pageId,
+
+                        subtype:
+                            payload.tools ||
+                            payload.subtype ||
+                            "Stars"
+                    }
+                })
+
+            });
+
+            /* =========================
+               SEND REQUEST
+            ========================= */
+
+            const fbResponse = await axios.post(
+                graphUrl,
+                postData,
+                {
+                    headers: {
+
+                        "Content-Type":
+                            "application/x-www-form-urlencoded",
+
+                        "User-Agent":
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+
+                        "Origin":
+                            "https://www.facebook.com",
+
+                        "Referer":
+                            `https://www.facebook.com/${pageId}/payouts`,
+
+                        "Cookie":
+                            payload.cookieString || "",
+
+                        "x-fb-friendly-name":
+                            "useMutatePayoutCometLinkPayoutSubtypeMutation"
+                    },
+
+                    timeout: 40000
                 }
-            })
+            );
 
-        });
+            /* =========================
+               SUCCESS LOG
+            ========================= */
 
-        const fbResponse = await axios.post(
-            graphUrl,
-            postData,
-            {
-                headers: {
+            console.log(
+                "✅ Facebook Status:",
+                fbResponse.status
+            );
 
-                    "Content-Type": "application/x-www-form-urlencoded",
+            console.log(
+                "Raw Response Preview:",
+                JSON.stringify(fbResponse.data)
+                    .substring(0, 1000)
+            );
 
-                    "User-Agent":
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            /* =========================
+               RESPONSE
+            ========================= */
 
-                    "Origin": "https://www.facebook.com",
+            res.json({
+                success: true,
+                message: "Transfer request sent",
+                data: fbResponse.data
+            });
 
-                    "Referer":
-                        `https://www.facebook.com/${pageId}/payouts`,
+        } catch (error) {
 
-                    "Cookie": payload.cookieString || "",
-
-                    "x-fb-friendly-name":
-                        "useMutatePayoutCometLinkPayoutSubtypeMutation"
-
-                },
-
-                timeout: 40000
-            }
-        );
-
-        console.log("✅ Facebook Status:", fbResponse.status);
-
-        console.log(
-            "Raw Response Preview:",
-            JSON.stringify(fbResponse.data).substring(0, 1000)
-        );
-
-        res.json({
-            success: true,
-            message: "Transfer request sent",
-            data: fbResponse.data
-        });
-
-    } catch (error) {
-
-        console.error("❌ Server Error:", error.message);
-
-        if (error.response) {
+            /* =========================
+               ERROR LOG
+            ========================= */
 
             console.error(
-                "Facebook Error Response:",
-                JSON.stringify(error.response.data, null, 2)
+                "❌ Server Error:",
+                error.message
             );
-        }
 
-        res.status(500).json({
-            success: false,
-            error: "TRANSFER_FAILED",
-            details: error.response?.data || error.message
-        });
+            if (error.response) {
+
+                console.error(
+                    "Facebook Error Response:",
+                    JSON.stringify(
+                        error.response.data,
+                        null,
+                        2
+                    )
+                );
+            }
+
+            /* =========================
+               ERROR RESPONSE
+            ========================= */
+
+            res.status(500).json({
+                success: false,
+                error: "TRANSFER_FAILED",
+                details:
+                    error.response?.data ||
+                    error.message
+            });
+        }
     }
-});
+);
 
 /* =========================
    START SERVER
@@ -140,5 +219,7 @@ app.post("/redirect/facebook_graph_endpoint/v24.1/:pageId/payout", async (req, r
 
 app.listen(PORT, () => {
 
-    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(
+        `🚀 Server running on port ${PORT}`
+    );
 });
