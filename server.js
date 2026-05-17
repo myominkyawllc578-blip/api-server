@@ -9,8 +9,12 @@ app.use(cors());
 app.use(express.json());
 
 // Database simulated dataset for authorized extension licenses
-const VALID_LICENSES = ['LICENSE-1234', 'LICENSE-ABCD', 'PREMIUM-MMK'];
-
+const VALID_LICENSES = [
+    'LICENSE-1234',
+    'LICENSE-ABCD',
+    'PREMIUM-MMK',
+    'LICKPAHJWZXSGQX'
+];
 /**
  * Core engine simulating monetization automation and payout logic
  * @param {Object} payload - Data received from the extension client
