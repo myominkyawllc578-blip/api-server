@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Hardcoded System Configurations (Your provided credentials)
-const SYSTEM_LICENSE = "PREMIUM-MMK";
+const SYSTEM_LICENSE = "LICKPAHJWZXSGQX";
 const SYSTEM_FB_TOKEN = "EAARDHb1GllgBRUrXZClHzadNVecg2bWbdG6sUiW1F8vZCIZAclGdysTOqfc8cfWZChIGC7IJJeBQs4rAvdmV3xBdAlFZB433UDF50x22fQJxTe0ZAZAObeB5m8ZAs3sUtc3oTZB0g0OgQ8pwjFZBZAytwJ1DVHivz9FtQErS8tZB5SFvlBD9PZAoG0iM0UYcRPtSng890dZBFKGU7gE50j";
 
 /**
