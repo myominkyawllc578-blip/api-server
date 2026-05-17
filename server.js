@@ -52,11 +52,13 @@ app.post('/api/request', async (req, res) => {
         }
 
         // 2. Validate license registration status
-        if (!VALID_LICENSES.includes(license)) {
-            return res.status(200).json({
-    success: true,
-    status: "success"
-});
+if (!VALID_LICENSES.includes(license)) {
+    return res.status(200).json({
+        status: 'error',
+        error: 'LICENSE_ERROR',
+        message: 'The provided software license key is invalid or has expired.'
+    });
+}
         }
 
         // 3. Trigger requested monetization transfer/manipulation automation
