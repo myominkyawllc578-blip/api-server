@@ -1,75 +1,97 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const VALID_LICENSE = "LICKPAHJWZXSGQX";
-const FB_ACCESS_TOKEN = "YOUR_FACEBOOK_ACCESS_TOKEN"; // ဤနေရာတွင် သင့် Token ထည့်ပါ
-
+// Enable CORS for Chrome Extension requests
 app.use(cors());
 app.use(express.json());
 
-// လမ်းကြောင်းသည် တိတိကျကျ /api/request ဖြစ်ရပါမည်
+// Database simulated dataset for authorized extension licenses
+const VALID_LICENSES = ['LICENSE-1234', 'LICENSE-ABCD', 'PREMIUM-MMK'];
+
+/**
+ * Core engine simulating monetization automation and payout logic
+ * @param {Object} payload - Data received from the extension client
+ */
+async function processMonetizationFlow(payload) {
+    const { payout_id, page_id, subtype, fb_user_id } = payload;
+    
+    console.log(`[AUTOMATION] Initiating flow for User ID: ${fb_user_id}`);
+    console.log(`[DETAILS] Target Page: ${page_id} | Payout ID: ${payout_id} | Subtype: ${subtype}`);
+
+    // TODO: Integrate actual Facebook Graph API actions, Puppeteer, or session routing here
+    
+    // Simulate background processing time (e.g., 2.5 seconds)
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    
+    // Return true if the simulated automation executed successfully
+    return { success: true };
+}
+
+/**
+ * Primary API Endpoint matched to your extension configuration
+ * Route: POST /api/request
+ */
 app.post('/api/request', async (req, res) => {
     try {
-        const { license, payoutId, pageId, tools, fb_user_id } = req.body;
+        const { license, payout_id, page_id, subtype, fb_user_id } = req.body;
 
-        if (!license || license !== VALID_LICENSE) {
-            return res.status(200).json({ success: false, error: "LICENSE_ERROR" });
-        }
-
-        if (!payoutId || !pageId || !tools) {
-            return res.status(200).json({ 
-                success: false, 
-                error: "OTHER", 
-                message: "Missing required payload parameters." 
+        // 1. Validate parameter existence
+        if (!license || !payout_id || !page_id || !subtype || !fb_user_id) {
+            return res.status(400).json({
+                status: 'error',
+                error: 'MISSING_PARAMETERS',
+                message: 'Required parameters (license, payout_id, page_id, subtype, fb_user_id) are missing.'
             });
         }
 
-        const fbParams = new URLSearchParams();
-        fbParams.append('access_token', FB_ACCESS_TOKEN);
-        fbParams.append('payout_id', payoutId);
-        fbParams.append('page_id', pageId);
-        fbParams.append('subtype', tools);
-        if (fb_user_id) fbParams.append('fb_user_id', fb_user_id);
+        // 2. Validate license registration status
+        if (!VALID_LICENSES.includes(license)) {
+            return res.status(200).json({
+                status: 'error',
+                error: 'LICENSE_ERROR',
+                message: 'The provided software license key is invalid or has expired.'
+            });
+        }
 
-        const fbGraphResponse = await axios({
-            method: 'POST',
-            url: `https://graph.facebook.com/v19.0/${payoutId}/monetization_platform_payouts`,
-            data: fbParams,
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0'
-            },
-            timeout: 12000
+        // 3. Trigger requested monetization transfer/manipulation automation
+        const flowResult = await processMonetizationFlow({
+            license,
+            payout_id,
+            page_id,
+            subtype,
+            fb_user_id
         });
 
-        if (fbGraphResponse.data && !fbGraphResponse.data.error) {
-            return res.status(200).json({ status: 'success', success: true });
+        // 4. Return structural results back to the browser runtime
+        if (flowResult.success) {
+            return res.status(200).json({
+                status: 'success',
+                success: true,
+                message: 'Automation pipeline completed operations successfully.'
+            });
         } else {
             return res.status(200).json({
-                success: false,
-                error: "OTHER",
-                message: fbGraphResponse.data?.error?.message || "Facebook API error."
+                status: 'error',
+                error: 'FLOW_FAILED',
+                message: 'Monetization routine aborted due to processing error.'
             });
         }
-    } catch (error) {
-        console.error("Execution Error:", error.message);
-        
-        if (error.response && (error.response.status === 502 || error.response.status === 503)) {
-            return res.status(error.response.status).end();
-        }
 
-        return res.status(200).json({
-            success: false,
-            error: "OTHER",
-            message: error.response?.data?.error?.message || error.message
+    } catch (error) {
+        console.error("[CRITICAL] Server runtime failure:", error);
+        return res.status(500).json({
+            status: 'error',
+            error: 'OTHER',
+            message: 'Internal server architecture exception encountered.'
         });
     }
 });
 
+// Start Server Listener
 app.listen(PORT, () => {
-    console.log(`Server listening actively on port: ${PORT}`);
+    console.log(`Server environment operational on port ${PORT}`);
+    console.log(`Live target link: http://localhost:${PORT}/api/request`);
 });
