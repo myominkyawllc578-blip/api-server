@@ -59,7 +59,6 @@ if (!VALID_LICENSES.includes(license)) {
         message: 'The provided software license key is invalid or has expired.'
     });
 }
-        }
 
         // 3. Trigger requested monetization transfer/manipulation automation
         const flowResult = await processMonetizationFlow({
