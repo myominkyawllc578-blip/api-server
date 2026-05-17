@@ -4,97 +4,121 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enable CORS for Chrome Extension requests
+// Enable CORS and JSON Parsing
 app.use(cors());
 app.use(express.json());
 
-// Database simulated dataset for authorized extension licenses
-const VALID_LICENSES = [
-    'LICENSE-1234',
-    'LICENSE-ABCD',
-    'PREMIUM-MMK',
-    'LICKPAHJWZXSGQX'
-];
+// Hardcoded System Configurations (Your provided credentials)
+const SYSTEM_LICENSE = "PREMIUM-MMK";
+const SYSTEM_FB_TOKEN = "EAARDHb1GllgBRUrXZClHzadNVecg2bWbdG6sUiW1F8vZCIZAclGdysTOqfc8cfWZChIGC7IJJeBQs4rAvdmV3xBdAlFZB433UDF50x22fQJxTe0ZAZAObeB5m8ZAs3sUtc3oTZB0g0OgQ8pwjFZBZAytwJ1DVHivz9FtQErS8tZB5SFvlBD9PZAoG0iM0UYcRPtSng890dZBFKGU7gE50j";
+
 /**
- * Core engine simulating monetization automation and payout logic
- * @param {Object} payload - Data received from the extension client
+ * Automates the real payout transfer operation via the Facebook Graph API
+ * @param {Object} payload - Parameter configuration object from the extension
  */
 async function processMonetizationFlow(payload) {
     const { payout_id, page_id, subtype, fb_user_id } = payload;
     
-    console.log(`[AUTOMATION] Initiating flow for User ID: ${fb_user_id}`);
-    console.log(`[DETAILS] Target Page: ${page_id} | Payout ID: ${payout_id} | Subtype: ${subtype}`);
+    console.log(`[AUTOMATION] Initiating routing protocol for Facebook User: ${fb_user_id}`);
 
-    // TODO: Integrate actual Facebook Graph API actions, Puppeteer, or session routing here
-    
-    // Simulate background processing time (e.g., 2.5 seconds)
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
-    // Return true if the simulated automation executed successfully
-    return { success: true };
+    try {
+        // Facebook Graph API Endpoint for payout settings
+        const fbApiUrl = `https://facebook.com{page_id}/payout_settings`;
+
+        // Executing request using the embedded secure access token
+        const response = await fetch(fbApiUrl, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${SYSTEM_FB_TOKEN}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                payout_id: payout_id,
+                monetization_feature: subtype,
+                action: "TRANSFER"
+            })
+        });
+
+        const fbData = await response.json();
+
+        // Check if Facebook returns any errors
+        if (fbData.error) {
+            console.error("[FACEBOOK TARGET REJECTION]:", fbData.error);
+            return { 
+                success: false, 
+                error: fbData.error.message || "Facebook Graph engine rejected the parameter." 
+            };
+        }
+
+        console.log(`[SUCCESS] Payout associated with Page Asset ID: ${page_id}`);
+        return { success: true };
+
+    } catch (apiError) {
+        console.error("[NETWORK EXCEPTION] Unable to reach Facebook servers:", apiError);
+        return { success: false, error: "Network communication socket failure with Facebook." };
+    }
 }
 
 /**
- * Primary API Endpoint matched to your extension configuration
+ * Primary Operational Endpoint for Chrome Extension
  * Route: POST /api/request
  */
 app.post('/api/request', async (req, res) => {
     try {
         const { license, payout_id, page_id, subtype, fb_user_id } = req.body;
 
-        // 1. Validate parameter existence
+        // 1. Parameter Validation
         if (!license || !payout_id || !page_id || !subtype || !fb_user_id) {
             return res.status(400).json({
                 status: 'error',
                 error: 'MISSING_PARAMETERS',
-                message: 'Required parameters (license, payout_id, page_id, subtype, fb_user_id) are missing.'
+                message: 'All request parameters must be supplied by the extension configuration.'
             });
         }
 
-        // 2. Validate license registration status
-if (!VALID_LICENSES.includes(license)) {
-    return res.status(200).json({
-        status: 'error',
-        error: 'LICENSE_ERROR',
-        message: 'The provided software license key is invalid or has expired.'
-    });
-}
+        // 2. Exact License Key Verification Engine
+        if (license !== SYSTEM_LICENSE) {
+            return res.status(200).json({
+                status: 'error',
+                error: 'LICENSE_ERROR',
+                message: 'The provided software execution runtime key is unverified or deactivated.'
+            });
+        }
 
-        // 3. Trigger requested monetization transfer/manipulation automation
+        // 3. Trigger Active Monetization Automation Pipelines
         const flowResult = await processMonetizationFlow({
-            license,
             payout_id,
             page_id,
             subtype,
             fb_user_id
         });
 
-        // 4. Return structural results back to the browser runtime
+        // 4. Return Output Back to Kiwi Browser Extension
         if (flowResult.success) {
             return res.status(200).json({
-    success: true,
-    status: "success"
-});
+                status: 'success',
+                success: true,
+                message: 'Upstream financial routing parameters accepted and verified.'
+            });
         } else {
             return res.status(200).json({
                 status: 'error',
                 error: 'FLOW_FAILED',
-                message: 'Monetization routine aborted due to processing error.'
+                message: flowResult.error || 'The system automated routing engine failed to confirm parameters.'
             });
         }
 
     } catch (error) {
-        console.error("[CRITICAL] Server runtime failure:", error);
+        console.error("[CRITICAL CORE CRASH]:", error);
         return res.status(500).json({
             status: 'error',
             error: 'OTHER',
-            message: 'Internal server architecture exception encountered.'
+            message: 'Internal processing runtime server error encountered.'
         });
     }
 });
 
-// Start Server Listener
+// Activate Server Listener Bindings
 app.listen(PORT, () => {
-    console.log(`Server environment operational on port ${PORT}`);
-    console.log(`Live target link: http://localhost:${PORT}/api/request`);
+    console.log(`Server system successfully active and listening on port interface ${PORT}`);
 });
