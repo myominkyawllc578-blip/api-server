@@ -1,17 +1,13 @@
 {
-  "name": "fb-payout-backend",
+  "name": "api-server",
   "version": "1.0.0",
-  "description": "Backend bridge service for monetization tools",
-  "main": "server.js",
+  "description": "Monetization automation engine backend",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "axios": "^1.6.8",
     "cors": "^2.8.5",
     "express": "^4.19.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
