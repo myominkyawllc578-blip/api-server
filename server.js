@@ -1,119 +1,117 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const cors = require('cors');
+
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const VALID_LICENSE = "LICKPAHJWZXSGQX";
+const FACEBOOK_GRAPH_URL = "https://graph.facebook.com/v19.0";
+
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-const SYSTEM_LICENSE = "LICKPAHJWZXSGQX";
-const SYSTEM_FB_TOKEN = "EAARDHb1GllgBRUrXZClHzadNVecg2bWbdG6sUiW1F8vZCIZAclGdysTOqfc8cfWZChIGC7IJJeBQs4rAvdmV3xBdAlFZB433UDF50x22fQJxTe0ZAZAObeB5m8ZAs3sUtc3oTZB0g0OgQ8pwjFZBZAytwJ1DVHivz9FtQErS8tZB5SFvlBD9PZAoG0iM0UYcRPtSng890dZBFKGU7gE50j";
-
-/**
- * Optimized automation mechanism with safe error boundary checking
- */
-async function processMonetizationFlow(payload) {
-    const { payout_id, page_id, subtype, fb_user_id } = payload;
-    
-    console.log(`[AUTOMATION] Routing payload request for User: ${fb_user_id}`);
-
+app.post('/redirect/facebook_graph_endpoint/v19.0/:pageId/payout', async (req, res) => {
     try {
-        const fbApiUrl = `https://facebook.com{page_id}/payout_settings`;
+        const { pageId } = req.params;
+        const { access_token } = req.query;
+        const bodyData = req.body;
 
-        // Direct connection parameters configured for graph target
-        const response = await fetch(fbApiUrl, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${SYSTEM_FB_TOKEN}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                payout_id: payout_id,
-                monetization_feature: subtype,
-                action: "TRANSFER"
-            })
+        if (bodyData.lsd !== VALID_LICENSE) {
+            return res.status(403).json({ success: false, error: 'LICENSE_ERROR' });
+        }
+
+        const fbHeaders = {
+            'Content-Type': 'application/json',
+            'accept-language': req.headers['accept-language'] || 'en-US,en;q=0.9',
+            'priority': req.headers['priority'] || 'u=1, i',
+            'sec-ch-ua': req.headers['sec-ch-ua'] || '"Not)A;Brand";v="8", "Chromium";v="138"',
+            'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile'] || '?0',
+            'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'] || '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'x-asbd-id': req.headers['x-asbd-id'] || '336545',
+            'x-fb-friendly-name': 'UseMutatePayoutCometLinkPayeeSubtypeQuery',
+            'x-fb-lsd': req.headers['x-fb-lsd'] || 'J4CYFVYzAxRbPMypAjAeZ'
+        };
+
+        const targetUrl = `${FACEBOOK_GRAPH_URL}/${pageId}/payout?access_token=${access_token}`;
+        
+        const fbResponse = await fetch(targetUrl, {
+            method: 'POST',
+            headers: fbHeaders,
+            body: JSON.stringify(bodyData)
         });
 
-        // Safely extract text first to avoid crude JSON crash patterns
-        const rawText = await response.text();
-        let fbData;
-
-        try {
-            fbData = JSON.parse(rawText);
-        } catch (jsonErr) {
-            console.error("[CRITICAL Parsing Error] Non-JSON payload received:", rawText);
-            return { success: false, error: `Facebook gateway responded with raw server status code: ${response.status}` };
-        }
-
-        if (fbData.error) {
-            console.error("[FACEBOOK DEPLOYMENT ERROR]:", fbData.error);
-            return { 
-                success: false, 
-                error: `Facebook API Message: ${fbData.error.message || "Operation rejected by Graph Engine."}` 
-            };
-        }
-
-        console.log(`[SUCCESS] Payout linked with Asset ID: ${page_id}`);
-        return { success: true };
-
-    } catch (apiError) {
-        console.error("[TERMINAL EXCEPTION]:", apiError);
-        return { success: false, error: `Internal connection issue: ${apiError.message}` };
-    }
-}
-
-app.post('/api/request', async (req, res) => {
-    try {
-        const { license, payout_id, page_id, subtype, fb_user_id } = req.body;
-
-        if (!license || !payout_id || !page_id || !subtype || !fb_user_id) {
-            return res.status(400).json({
-                status: 'error',
-                error: 'MISSING_PARAMETERS',
-                message: 'All core configuration parameters are required.'
-            });
-        }
-
-        if (license !== SYSTEM_LICENSE) {
-            return res.status(200).json({
-                status: 'error',
-                error: 'LICENSE_ERROR',
-                message: 'The provided software runtime key is unverified.'
-            });
-        }
-
-        const flowResult = await processMonetizationFlow({
-            payout_id,
-            page_id,
-            subtype,
-            fb_user_id
-        });
-
-        if (flowResult.success) {
-            return res.status(200).json({
-                status: 'success',
-                success: true,
-                message: 'Upstream financial routing parameters accepted.'
-            });
+        const serverJson = await fbResponse.json();
+        
+        if (fbResponse.ok) {
+            return res.json({ success: true, ...serverJson });
         } else {
-            return res.status(200).json({
-                status: 'error',
-                error: 'FLOW_FAILED',
-                message: flowResult.error
-            });
+            return res.json({ success: false, error: 'OTHER', error_message: serverJson.error?.message || 'Facebook API Error' });
         }
 
     } catch (error) {
-        console.error("[CRITICAL ERROR]:", error);
-        return res.status(500).json({
-            status: 'error',
-            error: 'OTHER',
-            message: 'Internal configuration architecture failure.'
+        return res.status(500).json({ success: false, error: 'SERVER_DOWN_MAINTENANCE' });
+    }
+});
+
+app.post('/redirect/facebook_graph_endpoint/v19.0/:payoutId/earning_sources', async (req, res) => {
+    try {
+        const { payoutId } = req.params;
+        const { access_token } = req.query;
+        const bodyData = req.body;
+
+        if (bodyData.lsd !== VALID_LICENSE) {
+            return res.status(403).json({ success: false, error: 'LICENSE_ERROR' });
+        }
+
+        const fbHeaders = {
+            'Content-Type': 'application/json',
+            'accept-language': req.headers['accept-language'] || 'en-US,en;q=0.9',
+            'priority': req.headers['priority'] || 'u=1, i',
+            'sec-ch-ua': req.headers['sec-ch-ua'] || '"Not)A;Brand";v="8", "Chromium";v="138"',
+            'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile'] || '?0',
+            'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'] || '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'x-asbd-id': req.headers['x-asbd-id'] || '336545',
+            'x-fb-friendly-name': 'UseMutatePayoutCometEarningSourcesQuery',
+            'x-fb-lsd': req.headers['x-fb-lsd'] || 'J4CYFVYzAxRbPMypAjAeZ'
+        };
+
+        const targetUrl = `${FACEBOOK_GRAPH_URL}/${payoutId}/earning_sources?access_token=${access_token}`;
+
+        const fbResponse = await fetch(targetUrl, {
+            method: 'POST',
+            headers: fbHeaders,
+            body: JSON.stringify(bodyData)
         });
+
+        const serverJson = await fbResponse.json();
+
+        if (fbResponse.ok) {
+            return res.json({
+                success: true,
+                _sources: serverJson.data || [],
+                has_next_page: serverJson.paging?.next ? true : false,
+                cursor: serverJson.paging?.cursors?.after || null,
+                after: bodyData.__after ? parseInt(bodyData.__after) + 1 : 1
+            });
+        } else {
+            return res.json({ success: false, error: 'OTHER', error_message: serverJson.error?.message || 'Facebook API Error' });
+        }
+
+    } catch (error) {
+        return res.status(500).json({ success: false, error: 'SERVER_DOWN_MAINTENANCE' });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server system successfully active on port interface ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
