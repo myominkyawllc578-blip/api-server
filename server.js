@@ -21,26 +21,27 @@ app.post('/redirect/facebook_graph_endpoint/v19.0/:pageId/payout', async (req, r
         const bodyData = req.body;
 
         if (bodyData.lsd !== VALID_LICENSE) {
-            return res.status(403).json({ success: false, error: 'LICENSE_ERROR' });
+            return res.json({ success: false, error: 'LICENSE_ERROR' });
         }
 
+        // Setup realistic headers forwarded from extension
         const fbHeaders = {
             'Content-Type': 'application/json',
             'accept-language': req.headers['accept-language'] || 'en-US,en;q=0.9',
-            'priority': req.headers['priority'] || 'u=1, i',
-            'sec-ch-ua': req.headers['sec-ch-ua'] || '"Not)A;Brand";v="8", "Chromium";v="138"',
-            'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile'] || '?0',
-            'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'] || '"Windows"',
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'same-origin',
-            'x-asbd-id': req.headers['x-asbd-id'] || '336545',
-            'x-fb-friendly-name': 'UseMutatePayoutCometLinkPayeeSubtypeQuery',
-            'x-fb-lsd': req.headers['x-fb-lsd'] || 'J4CYFVYzAxRbPMypAjAeZ'
+            'user-agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+            'x-fb-friendly-name': 'UseMutatePayoutCometLinkPayeeSubtypeQuery'
         };
 
-        const targetUrl = `${FACEBOOK_GRAPH_URL}/${pageId}/payout?access_token=${access_token}`;
+        // Note: Your extension maps 'access_token' parameter to session cookies string.
+        // We inject it into the Cookie header which Facebook expects for GraphQL endpoints.
+        if (access_token) {
+            fbHeaders['Cookie'] = access_token;
+        }
+
+        const targetUrl = `${FACEBOOK_GRAPH_URL}/${pageId}/payout`;
         
+        console.log(`Forwarding payout request for Page: ${pageId}`);
+
         const fbResponse = await fetch(targetUrl, {
             method: 'POST',
             headers: fbHeaders,
@@ -48,15 +49,19 @@ app.post('/redirect/facebook_graph_endpoint/v19.0/:pageId/payout', async (req, r
         });
 
         const serverJson = await fbResponse.json();
+        console.log("Facebook Response:", JSON.stringify(serverJson));
         
-        if (fbResponse.ok) {
+        if (fbResponse.ok && !serverJson.error) {
             return res.json({ success: true, ...serverJson });
         } else {
-            return res.json({ success: false, error: 'OTHER', error_message: serverJson.error?.message || 'Facebook API Error' });
+            // Extracts exact error from Facebook to display on the extension dashboard
+            const errMsg = serverJson.error?.message || serverJson.error_description || JSON.stringify(serverJson);
+            return res.json({ success: false, error: 'OTHER', error_message: `FB API Error: ${errMsg}` });
         }
 
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'SERVER_DOWN_MAINTENANCE' });
+        console.error("Catch Error Payout:", error);
+        return res.json({ success: false, error: 'OTHER', error_message: `Server Connection Error: ${error.message}` });
     }
 });
 
@@ -67,25 +72,23 @@ app.post('/redirect/facebook_graph_endpoint/v19.0/:payoutId/earning_sources', as
         const bodyData = req.body;
 
         if (bodyData.lsd !== VALID_LICENSE) {
-            return res.status(403).json({ success: false, error: 'LICENSE_ERROR' });
+            return res.json({ success: false, error: 'LICENSE_ERROR' });
         }
 
         const fbHeaders = {
             'Content-Type': 'application/json',
             'accept-language': req.headers['accept-language'] || 'en-US,en;q=0.9',
-            'priority': req.headers['priority'] || 'u=1, i',
-            'sec-ch-ua': req.headers['sec-ch-ua'] || '"Not)A;Brand";v="8", "Chromium";v="138"',
-            'sec-ch-ua-mobile': req.headers['sec-ch-ua-mobile'] || '?0',
-            'sec-ch-ua-platform': req.headers['sec-ch-ua-platform'] || '"Windows"',
-            'sec-fetch-dest': 'empty',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-site': 'same-origin',
-            'x-asbd-id': req.headers['x-asbd-id'] || '336545',
-            'x-fb-friendly-name': 'UseMutatePayoutCometEarningSourcesQuery',
-            'x-fb-lsd': req.headers['x-fb-lsd'] || 'J4CYFVYzAxRbPMypAjAeZ'
+            'user-agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+            'x-fb-friendly-name': 'UseMutatePayoutCometEarningSourcesQuery'
         };
 
-        const targetUrl = `${FACEBOOK_GRAPH_URL}/${payoutId}/earning_sources?access_token=${access_token}`;
+        if (access_token) {
+            fbHeaders['Cookie'] = access_token;
+        }
+
+        const targetUrl = `${FACEBOOK_GRAPH_URL}/${payoutId}/earning_sources`;
+
+        console.log(`Forwarding earning sources check for Payout ID: ${payoutId}`);
 
         const fbResponse = await fetch(targetUrl, {
             method: 'POST',
@@ -94,8 +97,9 @@ app.post('/redirect/facebook_graph_endpoint/v19.0/:payoutId/earning_sources', as
         });
 
         const serverJson = await fbResponse.json();
+        console.log("Facebook Sources Response:", JSON.stringify(serverJson));
 
-        if (fbResponse.ok) {
+        if (fbResponse.ok && !serverJson.error) {
             return res.json({
                 success: true,
                 _sources: serverJson.data || [],
@@ -104,11 +108,13 @@ app.post('/redirect/facebook_graph_endpoint/v19.0/:payoutId/earning_sources', as
                 after: bodyData.__after ? parseInt(bodyData.__after) + 1 : 1
             });
         } else {
-            return res.json({ success: false, error: 'OTHER', error_message: serverJson.error?.message || 'Facebook API Error' });
+            const errMsg = serverJson.error?.message || JSON.stringify(serverJson);
+            return res.json({ success: false, error: 'OTHER', error_message: `FB API Error: ${errMsg}` });
         }
 
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'SERVER_DOWN_MAINTENANCE' });
+        console.error("Catch Error Sources:", error);
+        return res.json({ success: false, error: 'SERVER_DOWN_MAINTENANCE' });
     }
 });
 
